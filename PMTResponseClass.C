@@ -1,10 +1,3 @@
-/*
- *
- * Under Construction
- *
- */
-
-
 #include "TMath.h"
 #include "TF1.h"
 #include <iostream>
@@ -38,7 +31,6 @@ class PMTResponseObject {
   int n, numPEPeaks;
 public:
   PMTResponseObject();
-  //double Signal(double *x, double *p);  
   //double Signal()(double *x, double *p){
   //return Signal(x,p);
   //}
@@ -48,13 +40,13 @@ public:
   int getN(){
     return n;
   }
+
   double PhotoElectron_N(double *x, double *p);
-  
+  double Signal(double *x, double *p);  
   //double PhotoElectron_N()(double *x, double *p){
   //  return PhotoElectron_N(x,p);
   //}
-  
-  //double testFunction()(double *x, double*p){
+    //double testFunction()(double *x, double*p){
   //  return n* testFunction(x,p);
   //}
 };
@@ -65,7 +57,7 @@ public:
  */
 PMTResponseObject::PMTResponseObject(){
   n=1;
-  numPEPeaks=2;
+  numPEPeaks=12;
 }
 
 /*
@@ -73,7 +65,7 @@ PMTResponseObject::PMTResponseObject(){
  */
 double PMTResponseObject::Signal(double *x, double *par){
   double signal = 0; // Initialize/Clear to 0;
-  cout << numPEPeaks;
+  //cout << numPEPeaks;
   for (n=0; n < numPEPeaks; n++){    
     signal += PhotoElectron_N(x,par);
   }
@@ -91,42 +83,42 @@ double PMTResponseObject::PhotoElectron_N(double *x, double *par){
   n==0 ? Sigma_n =par[4] : Sigma_n = sqrt(n)*par[2]; 
   // cout << Sigma_n << endl;
   double f = TMath::PoissonI(n,par[0])*(1-par[5])*TMath::Gaus(xx,Q_n, Sigma_n, kTRUE);
-  //double f = TMath::Gaus(xx, Q_n, Sigma_n, kTRUE);
   //double f = TMath::Gaus(xx, n*par[1], par[2], kTRUE);
   return f;
 }
 
 void DrawPMTResponse(){  
-  cout << "working" << endl;
   
+  // Draw the PMT Response Function
+  PMTResponseObject* fObj = new PMTResponseObject();  
   //cout << fObj->getN();
-  //fObj->n=2;
-  //cout << fObj->n<< endl;
-  //TF1 *f1 = new TF1("f1", fObj,&PMTResponseObject::Signal, 0, 300, 6, "PMTResponseObject", "Signal");
-  
+  TF1 *f1 = new TF1("f1", fObj,&PMTResponseObject::Signal, 0, 300, 7, "PMTResponseObject", "Signal");
+  setParameters(f1);
+  f1->SetLineColor(kBlack);
+  f1->Draw();    
 
-  for(int i =0; i< 4; i++){
+  //Draw the Contribution from each of the Single PE 
+  for(int i =0; i< 5; i++){
     PMTResponseObject* fObj = new PMTResponseObject();  //Class Object is strongly linked to TF1.
     fObj->setN(i);
     cout << fObj->getN() << endl;
     TF1 *f2 = new TF1(Form("f2_%i",i), fObj,&PMTResponseObject::PhotoElectron_N,
-		      0, 300, 6, 
+		      0, 300, 7, 
 		      "PMTResponseObject", "PhotoElectron_N");
-  
-    //TF1 *f1 = new TF1("f2", PMTResponseObject::testFunction, 0, 10, 1);
-    f2->SetParameter(0,mu);
-    f2->SetParameter(1,SinglePE);
-    f2->SetParameter(2,SinglePESpread);
-    f2->SetParameter(3,Pedestal);
-    f2->SetParameter(4,PedestalSpread);
-    f2->SetParameter(5,ThermalFraction);
-    f2->SetNpx(1000); //Number of Points to Draw
-    if(i==0) f2->Draw();
-    if(i!=0) f2->Draw("same");
+    setParameters(f2);
+    f2->Draw("same");
   }
-  //string PMTResponse = DefinePMTResponseFunction();
-  //cout << PMTResponse << endl;
-  //test();
+  //TF1 *f1 = new TF1("f2", PMTResponseObject::testFunction, 0, 10, 1);
 }
 
+void setParameters(TF1 *f){
+  f->SetParameter(0,mu);
+  f->SetParameter(1,SinglePE);
+  f->SetParameter(2,SinglePESpread);
+  f->SetParameter(3,Pedestal);
+  f->SetParameter(4,PedestalSpread);
+  f->SetParameter(5,ThermalFraction);
+  f->SetParameter(6,ThermalParameter);
+  f->SetNpx(1000); //Number of Points to Draw
+}
 
